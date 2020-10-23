@@ -1,16 +1,22 @@
 import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
-import { Grid, Form, Segment, Button } from 'semantic-ui-react';
+import { Grid, Form, Segment, Button, Loader } from 'semantic-ui-react';
+
+import { authenticate } from '../utils/miniSdk';
 
 const Login = () => {
   const [state, setState] = useState({});
+  const [isLoading, setLoading] = useState(false);
   const history = useHistory();
 
   const { username, password, accountName } = state;
 
-  const handleInputChange = (e, { name, value }) => setState({ [name]: value })
+  const handleInputChange = (e, { name, value }) => setState({ ...state, [name]: value })
 
-  const handleOnSignIn = () => {
+  const handleOnSignIn = async () => {
+    setLoading(true);
+    await authenticate(state);
+    setLoading(false);
     history.push('/dashboard');
   };
 
@@ -32,8 +38,9 @@ const Login = () => {
             />
             <Form.Input fluid icon='book' iconPosition='left' placeholder='Account Name' name='accountName' value={accountName} onChange={handleInputChange} />
 
-            <Button color='teal' fluid size='large' onClick={handleOnSignIn}>
-              Sign In
+            <Button color='teal' fluid size='big' onClick={handleOnSignIn}>
+              <Loader inline size='small' active={isLoading} />
+              {!isLoading && <>Sign In</>}
             </Button>
           </Segment>
         </Form>
