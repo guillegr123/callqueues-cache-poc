@@ -95,7 +95,8 @@ const QUBICLE_QUEUES = gql`
     qubicle_queues(accountId: $accountId)
       @rest(type: "[QubicleQueue]", path: "/accounts/{args.accountId}/qubicle_queues", method: "GET") {
         id,
-        name
+        name,
+        timestamp
       }
   }
 `;
@@ -113,7 +114,11 @@ export const authenticate = async ({ username, password, accountName }) => {
   return auth;
 };
 
-export const isAuthenticated = () => !!localStorageGetValue('auth')?.authToken;
+export const getAuthToken = () => localStorageGetValue('auth')?.authToken;
+
+export const getCurrentAccountId = () => localStorageGetValue('auth')?.accountId;
+
+export const isAuthenticated = () => !!getAuthToken();
 
 export const listQubicleQueues = (args) => {
   const accountId = _.get(
