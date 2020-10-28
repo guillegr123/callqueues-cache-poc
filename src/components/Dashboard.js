@@ -2,6 +2,7 @@ import React from 'react';
 import { Container, Header, TableBody } from 'semantic-ui-react';
 import { Table } from 'semantic-ui-react';
 import moment from 'moment';
+import _ from 'lodash';
 
 import { usePredefinedQuery } from '../miniSdk/hooks';
 
@@ -24,20 +25,32 @@ const Dashboard = () => {
                   Name
                 </Table.HeaderCell>
                 <Table.HeaderCell>
+                  Active recipients
+                </Table.HeaderCell>
+                <Table.HeaderCell>
+                  Available recipients
+                </Table.HeaderCell>
+                <Table.HeaderCell>
                   Timestamp
                 </Table.HeaderCell>
               </Table.Row>
             </Table.Header>
             <TableBody>
-              {data.qubicle_queues.map(queue => (
-                <Table.Row key={queue.id}>
+              {data.qubicle_queues.map(({ id, name, activeRecipientCount, availableRecipientCount, timestamp }) => (
+                <Table.Row key={id}>
                   <Table.Cell>
-                    {queue.name}
+                    {name}
+                  </Table.Cell>
+                  <Table.Cell>
+                    {(_.isNil(activeRecipientCount) ? 'Unknown' : _.toString(activeRecipientCount))}
+                  </Table.Cell>
+                  <Table.Cell>
+                    {(_.isNil(availableRecipientCount) ? 'Unknown' : _.toString(availableRecipientCount))}
                   </Table.Cell>
                   <Table.Cell>
                     {
-                      queue.timestamp
-                        ? moment.unix(queue.timestamp).format('YYYY-MM-DD HH:mm:ss')
+                      timestamp
+                        ? moment.unix(timestamp).format('YYYY-MM-DD HH:mm:ss')
                         : 'Unknown'
                     }
                   </Table.Cell>

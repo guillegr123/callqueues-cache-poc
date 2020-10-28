@@ -15,7 +15,9 @@ const queries = {
             @rest(type: "[QubicleQueue]", path: "/accounts/{args.accountId}/qubicle_queues", method: "GET") {
               id,
               name,
-              timestamp
+              timestamp,
+              activeRecipientCount,
+              availableRecipientCount
             }
         }
       `,
@@ -23,7 +25,9 @@ const queries = {
         binding: 'qubicle.queue',
         propMap: {
           id: 'queue_id',
-          timestamp: 'event_unix_timestamp'
+          timestamp: 'event_unix_timestamp',
+          activeRecipientCount: 'active_recipient_count',
+          availableRecipientCount: 'available_recipient_count'
         }
       }
     }
@@ -104,25 +108,10 @@ const usePredefinedQuery = ({ name, variables: pVariables = {} }) => {
     });
   };
 
-  console.log('queryData', _.get(queries, name));
   return useQuery(query, {
     variables,
     onCompleted: wsSubscription && onQueryCompleted
-  })
-
-  /*
-    .then(({ data }) => data.qubicle_queues);
-
-  tryQuery.then(() => {
-    if (wsSubscriptions.current.includes('qubicle.queue')) {
-      return;
-    }
-
-    wsSubscriptions.current.push('qubicle.queue');
-
-    
   });
-  */
 };
 
 export default usePredefinedQuery;
