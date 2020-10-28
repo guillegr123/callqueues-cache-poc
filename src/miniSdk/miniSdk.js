@@ -6,11 +6,6 @@ import md5 from 'md5';
 
 import { apiUri } from '../config.json';
 
-const WebSocketData = {
-  instance: null,
-  subscriptions: []
-};
-
 const localStorageSetValue = (key, value) => {
   if (_.isString(value)) {
     localStorage.setItem(key, value);  
@@ -78,7 +73,7 @@ const restLink = new RestLink({
   fieldNameNormalizer: _.camelCase
 });
 
-const client = new ApolloClient({
+export const graphqlClient = new ApolloClient({
   link: ApolloLink.from([authRestLink, restLink]),
   cache: new InMemoryCache(),
 });
@@ -93,24 +88,13 @@ const AUTH = gql`
   }
 `;
 
-const QUBICLE_QUEUES = gql`
-  query qubicle_queues($accountId: String) {
-    qubicle_queues(accountId: $accountId)
-      @rest(type: "[QubicleQueue]", path: "/accounts/{args.accountId}/qubicle_queues", method: "GET") {
-        id,
-        name,
-        timestamp
-      }
-  }
-`;
-
 export const authenticate = async ({ username, password, accountName }) => {
   const credentials = {
     credentials: md5(`${username}:${password}`),
     account_name: accountName
   };
 
-  const { data: { auth } /*, errors */ } = await client.mutate({ mutation: AUTH, variables: { credentials } });
+  const { data: { auth } /*, errors */ } = await graphqlClient.mutate({ mutation: AUTH, variables: { credentials } });
 
   localStorageSetValue('auth', auth);
 
@@ -123,80 +107,8 @@ export const getCurrentAccountId = () => localStorageGetValue('auth')?.accountId
 
 export const isAuthenticated = () => !!getAuthToken();
 
-export const listQubicleQueues = (args) => {
-  const query = QUBICLE_QUEUES;
-  const accountId = _.get(
-    args,
-    'accountId',
-    localStorageGetValue('auth')?.accountId
-  );
-  const tryQuery = client
-    .query({
-      query,
-      variables: {
-        accountId
-      }
-    })
-    .then(({ data }) => data.qubicle_queues);
-
-  tryQuery.then(() => {
-    if (WebSocketData.subscriptions.includes('qubicle.queue')) {
-      return;
-    }
-
-    WebSocketData.subscriptions.push('qubicle.queue');
-
-    WebSocketData.instance.then(ws => {
-      ws.addEventListener("message", e => {
-        const message = JSON.parse(e.data);
-        const eventData = message.data;
-        const { qubicle_queues: queues } = client.readQuery({
-          query,
-          variables: {
-            accountId
-          }
-        });
-        const queueToUpdate = queues.find(q => q.id === eventData.queue_id)
-        console.log('Message', message);
-
-        if (!queueToUpdate) {
-          return;
-        }
-
-        console.log('queueToUpdate', queueToUpdate);
-
-        client.writeQuery({
-          query,
-          variables: {
-            accountId
-          },
-          data: {
-            qubicle_queues: queues.map(q =>
-              (q.id === eventData.queue_id) ? {
-                ...queueToUpdate,
-                timestamp: eventData.event_unix_timestamp
-              } : q
-            )
-          },
-        });
-      });
-
-      ws.send(JSON.stringify({
-        action: 'subscribe',
-        auth_token: getAuthToken(),
-        data: {
-          account_id: getCurrentAccountId(),
-          binding: 'qubicle.queue'
-        }
-      }));
-    });
-  });
-
-  return tryQuery;
-};
-
-export const connectToWebSocket = () => {
-  WebSocketData.instance = new Promise((resolve, reject) => {
+export const connectToWebSocket = () =>
+  new Promise((resolve, reject) => {
     const internalWs = new WebSocket("wss://{kazoo-websockets-url}");
     internalWs.onopen = () => {
       console.log("WS opened");
@@ -206,6 +118,3 @@ export const connectToWebSocket = () => {
       console.log("WS closed");
     };
   });
-
-  return () => WebSocketData.instance.then(internalWs => internalWs.close());
-};

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Grid, Form, Segment, Button, Loader } from 'semantic-ui-react';
 
-import { authenticate } from '../utils/miniSdk';
+import { authenticate } from '../miniSdk';
 
 const Login = () => {
   const [state, setState] = useState({});

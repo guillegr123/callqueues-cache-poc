@@ -1,32 +1,22 @@
-import React, { useEffect, useState } from 'react';
-import { Container, Header, TableBody, Button } from 'semantic-ui-react';
+import React from 'react';
+import { Container, Header, TableBody } from 'semantic-ui-react';
 import { Table } from 'semantic-ui-react';
 import moment from 'moment';
 
-import { listQubicleQueues } from '../utils/miniSdk';
+import { usePredefinedQuery } from '../miniSdk/hooks';
 
 const Dashboard = () => {
-  const [queues, setQueues] = useState([]);
+  const { data, error, loading } = usePredefinedQuery({ name: 'qubicle_queues.list' });
   
-  const fetchQubicleQueues = async () => {
-    const queues = await listQubicleQueues();
-    setQueues(queues);
-  };
-
-  useEffect(() => {
-    fetchQubicleQueues(); // Called explicitly because it is asynchronous
-  }, []);
+  console.log('Dashboard: Rendering...');
 
   return (
     <Container text>
       <Header as='h1' dividing>
         Queues
       </Header>
-      <Button onClick={fetchQubicleQueues}>
-        Refresh queues in view
-      </Button>
       {
-        queues.length > 0 && (
+        !loading && !error && (
           <Table>
             <Table.Header>
               <Table.Row>
@@ -39,7 +29,7 @@ const Dashboard = () => {
               </Table.Row>
             </Table.Header>
             <TableBody>
-              {queues.map(queue => (
+              {data.qubicle_queues.map(queue => (
                 <Table.Row key={queue.id}>
                   <Table.Cell>
                     {queue.name}

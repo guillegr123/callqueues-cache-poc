@@ -1,7 +1,7 @@
 import React from "react";
 import { Route, Redirect } from "react-router-dom";
 
-import { isAuthenticated } from '../utils/miniSdk';
+import { isAuthenticated } from '../miniSdk';
 
 const ProtectedRoute = ({ component: Component, render, ...rest }) => {
   return (
