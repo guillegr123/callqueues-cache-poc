@@ -1,6 +1,4 @@
-import { ApolloClient } from 'apollo-client';
-import { ApolloLink } from 'apollo-link';
-import { InMemoryCache } from 'apollo-cache-inmemory';
+import { ApolloClient, ApolloLink, InMemoryCache } from '@apollo/client';
 import { RestLink } from 'apollo-link-rest';
 import gql from 'graphql-tag';
 import _ from 'lodash';
