@@ -1,13 +1,17 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Redirect, Route, Switch } from 'react-router-dom';
-import './App.css';
+
 import Login from './components/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 import Dashboard from './components/Dashboard';
+import { connectToWebSocket } from './utils/miniSdk';
 
 import 'semantic-ui-css/semantic.min.css';
+import './App.css';
 
 function App() {
+  useEffect(connectToWebSocket, []);
+
   return (
     <BrowserRouter>
       <Switch>

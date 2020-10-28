@@ -1,60 +1,30 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Container, Header, TableBody } from 'semantic-ui-react';
+import React, { useEffect, useState } from 'react';
+import { Container, Header, TableBody, Button } from 'semantic-ui-react';
 import { Table } from 'semantic-ui-react';
 import moment from 'moment';
 
-import { getAuthToken, getCurrentAccountId, listQubicleQueues } from '../utils/miniSdk';
+import { listQubicleQueues } from '../utils/miniSdk';
 
 const Dashboard = () => {
   const [queues, setQueues] = useState([]);
-  const [isWsOpen, setIsWsOpen] = useState(false);
-  const ws = useRef(null);
   
+  const fetchQubicleQueues = async () => {
+    const queues = await listQubicleQueues();
+    setQueues(queues);
+  };
+
   useEffect(() => {
-    (async () => {
-      const queues = await listQubicleQueues();
-      setQueues(queues);
-    })();
+    fetchQubicleQueues(); // Called explicitly because it is asynchronous
   }, []);
-
-  useEffect(() => {
-    ws.current = new WebSocket("wss://{kazoo-websockets-url}");
-    ws.current.onopen = () => {
-      console.log("WS opened");
-      setIsWsOpen(true);
-    };
-    ws.current.onclose = () => {
-      console.log("WS closed");
-      setIsWsOpen(false);
-    };
-    ws.current.onmessage = e => {
-      const message = JSON.parse(e.data);
-      console.log('Message', message);
-    };
-
-    return () => ws.current.close();
-  }, []);
-
-  useEffect(() => {
-    if (!isWsOpen) {
-      return;
-    }
-
-    ws.current.send(JSON.stringify({
-      action: 'subscribe',
-      auth_token: getAuthToken(),
-      data: {
-        account_id: getCurrentAccountId(),
-        binding: 'qubicle.queue'
-      }
-    }));
-  }, [isWsOpen]);
 
   return (
     <Container text>
       <Header as='h1' dividing>
         Queues
       </Header>
+      <Button onClick={fetchQubicleQueues}>
+        Refresh queues in view
+      </Button>
       {
         queues.length > 0 && (
           <Table>
