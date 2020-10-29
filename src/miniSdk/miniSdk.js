@@ -16,9 +16,8 @@ const localStorageSetValue = (key, value) => {
 
 const localStorageGetValue = (key, defaultValue) => {
   const value = localStorage.getItem(key);
-
   return _.isUndefined(value) ? defaultValue : JSON.parse(value);
-}
+};
 
 const AUTH_PUT = gql`
   mutation auth($credentials: Credentials) {
@@ -32,7 +31,7 @@ const AUTH_PUT = gql`
 
 const AUTH_GET = gql`
   query auth {
-    auth {
+    auth @client {
       authToken,
       accountId
     }
@@ -55,17 +54,21 @@ const authRestLink = new ApolloLink((operation, forward) => {
     });
   }
 
+  console.log('ApolloLink', operation, forward, _.isFunction(forward));
+
   return forward(operation);
 });
 
 const restLink = new RestLink({
   uri: api.default,
-  responseTransformer: async response =>
-    response.clone().json().then(jsonResponse => {
+  responseTransformer: async response => {
+    console.log('Response', response);
+    return response.clone().json().then(jsonResponse => {
       return (jsonResponse.auth_token && _.isPlainObject(jsonResponse.data))
         ? { ...jsonResponse.data, authToken: jsonResponse.auth_token }
         : jsonResponse.data
-    }),
+    });
+  },
   defaultSerializer: (data, headers) => {
     const serializedData = JSON.stringify({ data });
     headers.set('Content-Type', 'application/json');
@@ -76,13 +79,13 @@ const restLink = new RestLink({
 
 export const graphqlClient = new ApolloClient({
   link: ApolloLink.from([authRestLink, restLink]),
-  cache: new InMemoryCache(),
+  cache
 });
 
 cache.writeQuery({
   query: AUTH_GET,
   data: {
-    auth:  localStorageGetValue('auth')
+    auth: localStorageGetValue('auth')
   }
 });
 

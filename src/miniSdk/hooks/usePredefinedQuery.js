@@ -7,6 +7,19 @@ import { getAuthToken, getCurrentAccountId } from '../miniSdk';
 import { MiniSdkContext } from '../MiniSdkProvider';
 
 const queries = {
+  auth: {
+    get: {
+      query: gql`
+        query auth {
+          auth @client {
+            authToken,
+            accountId
+          }
+        }
+      `,
+      excludeAccountId: true
+    }
+  },
   qubicle_queues: {
     list: {
       query: gql`
@@ -39,9 +52,9 @@ const usePredefinedQuery = ({ name, variables: pVariables = {} }) => {
   const { ws } = useContext(MiniSdkContext);
   const graphqlClient = useApolloClient();
   const collectionName = name.substring(0, name.indexOf('.'));
-  const { query, wsSubscription } = _.get(queries, name);
+  const { query, excludeAccountId = false, wsSubscription } = _.get(queries, name);
   const accountId = _.get(pVariables, 'accountId', getCurrentAccountId());
-  const variables = {
+  const variables = excludeAccountId ? pVariables : {
     accountId,
     ...pVariables
   };
@@ -108,10 +121,16 @@ const usePredefinedQuery = ({ name, variables: pVariables = {} }) => {
     });
   };
 
-  return useQuery(query, {
-    variables,
-    onCompleted: wsSubscription && onQueryCompleted
-  });
+  return useQuery(
+    query,
+    _.merge(
+      {},
+      wsSubscription && {
+        onCompleted: wsSubscription && onQueryCompleted
+      },
+      !_.isEmpty(variables) && { variables }
+    )
+  );
 };
 
 export default usePredefinedQuery;
