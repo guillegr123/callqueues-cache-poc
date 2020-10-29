@@ -4,7 +4,7 @@ import gql from 'graphql-tag';
 import _ from 'lodash';
 import md5 from 'md5';
 
-import { apiUri } from '../config.json';
+import { api } from '../config.json';
 
 const localStorageSetValue = (key, value) => {
   if (_.isString(value)) {
@@ -58,7 +58,7 @@ const authRestLink = new ApolloLink((operation, forward) => {
 });
 
 const restLink = new RestLink({
-  uri: apiUri,
+  uri: api.default,
   responseTransformer: async response =>
     response.clone().json().then(jsonResponse => {
       return (jsonResponse.auth_token && _.isPlainObject(jsonResponse.data))
@@ -109,7 +109,7 @@ export const isAuthenticated = () => !!getAuthToken();
 
 export const connectToWebSocket = () =>
   new Promise((resolve, reject) => {
-    const internalWs = new WebSocket("wss://{kazoo-websockets-url}");
+    const internalWs = new WebSocket(api.socket);
     internalWs.onopen = () => {
       console.log("WS opened");
       resolve(internalWs);

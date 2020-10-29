@@ -1,3 +1,6 @@
 {
-  "apiUri": "https://{kazoo-api-url}"
+  "api": {
+    "default": "https://{kazoo-api-url}",
+    "socket": "wss://{kazoo-websockets-url}"
+  }
 }
