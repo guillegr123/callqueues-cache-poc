@@ -20,30 +20,31 @@ const localStorageGetValue = (key, defaultValue) => {
   return _.isUndefined(value) ? defaultValue : JSON.parse(value);
 }
 
-const authRestLink = new ApolloLink((operation, forward) => {
-  if (operation.operationName === 'auth') {
-    return forward(operation).map(result => {
-      const { restResponses } = operation.getContext();
-      const authResponse = restResponses.find(resp =>
-        resp.url.endsWith('desktop_auth') && resp.status === 201
-      );
-
-      if (!authResponse) {
-        return result;
+const AUTH_PUT = gql`
+  mutation auth($credentials: Credentials) {
+    auth(input: $credentials)
+      @rest(type: "Authentication", path: "/desktop_auth", method: "PUT") {
+        authToken,
+        accountId
       }
+  }
+`;
 
-      authResponse.clone().json().then(jsonResponse =>
-        localStorageSetValue('auth', {
-          authToken: jsonResponse.auth_token,
-          accountId: jsonResponse.data.account_id
-        })
-      );
-  
-      return result;
-    });
-  } else {
+const AUTH_GET = gql`
+  query auth {
+    auth {
+      authToken,
+      accountId
+    }
+  }
+`;
+
+const cache = new InMemoryCache();
+
+const authRestLink = new ApolloLink((operation, forward) => {
+  if (operation.operationName !== 'auth') {
     operation.setContext(({ headers }) => {
-      const authToken = localStorageGetValue('auth')?.authToken;
+      const authToken = cache.readQuery({ query: AUTH_GET }).auth.authToken;
       return {
         headers: {
           ...headers,
@@ -52,9 +53,9 @@ const authRestLink = new ApolloLink((operation, forward) => {
         }
       };
     });
-
-    return forward(operation);
   }
+
+  return forward(operation);
 });
 
 const restLink = new RestLink({
@@ -78,15 +79,12 @@ export const graphqlClient = new ApolloClient({
   cache: new InMemoryCache(),
 });
 
-const AUTH = gql`
-  mutation auth($credentials: Credentials) {
-    auth(input: $credentials)
-      @rest(type: "Authentication", path: "/desktop_auth", method: "PUT") {
-        authToken,
-        accountId
-      }
+cache.writeQuery({
+  query: AUTH_GET,
+  data: {
+    auth:  localStorageGetValue('auth')
   }
-`;
+});
 
 export const authenticate = async ({ username, password, accountName }) => {
   const credentials = {
@@ -94,16 +92,30 @@ export const authenticate = async ({ username, password, accountName }) => {
     account_name: accountName
   };
 
-  const { data: { auth } /*, errors */ } = await graphqlClient.mutate({ mutation: AUTH, variables: { credentials } });
-
-  localStorageSetValue('auth', auth);
+  const { data: { auth } /*, errors */ } = await graphqlClient.mutate({
+    mutation: AUTH_PUT,
+    variables: { credentials },
+    update: (cache, { data: { auth } }) => {
+      localStorageSetValue('auth', auth);
+      cache.writeQuery({
+        query: AUTH_GET,
+        data: {
+          auth
+        }
+      });
+    }
+  });
 
   return auth;
 };
 
-export const getAuthToken = () => localStorageGetValue('auth')?.authToken;
+const getAuth = () => cache.readQuery({
+  query: AUTH_GET
+}).auth;
 
-export const getCurrentAccountId = () => localStorageGetValue('auth')?.accountId;
+export const getAuthToken = () => getAuth()?.authToken;
+
+export const getCurrentAccountId = () => getAuth()?.accountId;
 
 export const isAuthenticated = () => !!getAuthToken();
 
