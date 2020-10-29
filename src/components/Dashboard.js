@@ -1,10 +1,8 @@
 import React from 'react';
-import { Container, Header, TableBody } from 'semantic-ui-react';
-import { Table } from 'semantic-ui-react';
-import moment from 'moment';
-import _ from 'lodash';
+import { Container, Header, Table } from 'semantic-ui-react';
 
 import { usePredefinedQuery } from '../miniSdk/hooks';
+import QueueRow from './QueueRow';
 
 const Dashboard = () => {
   const { data, error, loading } = usePredefinedQuery({ name: 'qubicle_queues.list' });
@@ -35,28 +33,9 @@ const Dashboard = () => {
                 </Table.HeaderCell>
               </Table.Row>
             </Table.Header>
-            <TableBody>
-              {data.qubicle_queues.map(({ id, name, activeRecipientCount, availableRecipientCount, timestamp }) => (
-                <Table.Row key={id}>
-                  <Table.Cell>
-                    {name}
-                  </Table.Cell>
-                  <Table.Cell>
-                    {(_.isNil(activeRecipientCount) ? 'Unknown' : _.toString(activeRecipientCount))}
-                  </Table.Cell>
-                  <Table.Cell>
-                    {(_.isNil(availableRecipientCount) ? 'Unknown' : _.toString(availableRecipientCount))}
-                  </Table.Cell>
-                  <Table.Cell>
-                    {
-                      timestamp
-                        ? moment.unix(timestamp).format('YYYY-MM-DD HH:mm:ss')
-                        : 'Unknown'
-                    }
-                  </Table.Cell>
-                </Table.Row>
-              ))}
-            </TableBody>
+            <Table.Body>
+              {data.qubicle_queues.map((queue) => <QueueRow key={queue.id} {...queue} />)}
+            </Table.Body>
           </Table>
         )
       }
